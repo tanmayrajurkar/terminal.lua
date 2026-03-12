@@ -20,37 +20,6 @@ local utf8sub_col = utils.utf8sub_col
 local TabStrip = utils.class(Panel)
 
 
-local function normalize_items(items)
-  if not items then
-    return {}
-  end
-
-  for i, item in ipairs(items) do
-    assert(item.label, "Tab item must have 'label' field")
-    item.id = item.id or i
-  end
-
-  return items
-end
-
-
-local function resolve_initial_selection(items, selected)
-  if #items == 0 then
-    return nil
-  end
-
-  if selected then
-    for _, item in ipairs(items) do
-      if item.id == selected then
-        return selected
-      end
-    end
-  end
-
-  return items[1].id
-end
-
-
 --- Create a new TabStrip instance.
 -- Do not call this method directly, call on the class instead.
 -- @tparam table opts Configuration options (see `Panel:init` for inherited properties)
@@ -110,7 +79,21 @@ function TabStrip:init(opts)
   Panel.init(self, opts)
   self.clear_content = false
 
-  local processed_items = normalize_items(items)
+  -- Process and validate items
+  local processed_items = {}
+  if items then
+    for i, item in ipairs(items) do
+      -- Validate item has required label field
+      assert(item.label, "Tab item must have 'label' field")
+
+      -- Create processed item with default id if missing
+      local processed_item = {
+        id = item.id or i,
+        label = item.label
+      }
+      table.insert(processed_items, processed_item)
+    end
+  end
 
   -- Validate option types
   if prefix ~= nil and type(prefix) ~= "string" then
@@ -161,7 +144,28 @@ function TabStrip:init(opts)
   self._tab_positions = {}
   self._total_content_width = 0
 
-  self.selected = resolve_initial_selection(processed_items, selected)
+  -- Handle initial selection
+  if #processed_items == 0 then
+    self.selected = nil
+  elseif selected then
+    -- Validate selected id exists in items
+    local found = false
+    for _, item in ipairs(processed_items) do
+      if item.id == selected then
+        found = true
+        break
+      end
+    end
+    if found then
+      self.selected = selected
+    else
+      -- Default to first tab if selected id not found
+      self.selected = processed_items[1].id
+    end
+  else
+    -- Default to first tab (index 1)
+    self.selected = processed_items[1].id
+  end
 
   -- Call select_cb during initialization if provided
   if self.select_cb then
@@ -243,7 +247,7 @@ function TabStrip:_adjust_viewport_for_selected()
 
   -- Get default ellipsis width
   local ellipsis = "…"
-  local ellipsis_width = width.utf8cwidth(ellipsis)
+  local ellipsis_width = width.utf8swidth(ellipsis)
 
   -- Calculate effective width (accounting for overflow indicators)
   local effective_width = self.inner_width
@@ -311,7 +315,7 @@ function TabStrip:_build_tab_line(available_width)
 
   -- Get default ellipsis
   local ellipsis = "…"
-  local ellipsis_width = width.utf8cwidth(ellipsis)
+  local ellipsis_width = width.utf8swidth(ellipsis)
 
   -- Calculate effective width and overflow indicators
   local has_left_overflow = false
@@ -586,9 +590,40 @@ end
 --     { id = "tab2", label = "Tab 2" }
 --   })
 function TabStrip:set_items(items)
-  self.items = normalize_items(items)
+  -- Process and validate items
+  local processed_items = {}
+  if items then
+    for i, item in ipairs(items) do
+      -- Validate item has required label field
+      assert(item.label, "Tab item must have 'label' field")
+
+      -- Create processed item with default id if missing
+      local processed_item = {
+        id = item.id or i,
+        label = item.label
+      }
+      table.insert(processed_items, processed_item)
+    end
+  end
+
+  self.items = processed_items
   self:_invalidate_cache()
-  self.selected = resolve_initial_selection(self.items, self.selected)
+
+  -- Adjust selection: validate it still exists, or default to first
+  if #processed_items == 0 then
+    self.selected = nil
+  else
+    local found = false
+    for _, item in ipairs(processed_items) do
+      if item.id == self.selected then
+        found = true
+        break
+      end
+    end
+    if not found then
+      self.selected = processed_items[1].id
+    end
+  end
 end
 
 
