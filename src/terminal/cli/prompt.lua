@@ -55,9 +55,9 @@ Prompt.keyname2actions = {
   ["home"] = "goto_home",
   ["end"] = "goto_end",
   -- emacs keybinding
-  ["ctrl_f"] = "left",
+  ["ctrl_f"] = "right",
   ["alt_b"] = "left_word",
-  ["ctrl_b"] = "right",
+  ["ctrl_b"] = "left",
   ["alt_f"] = "right_word",
   ["ctrl_a"] = "goto_home",
   ["ctrl_e"] = "goto_end",
@@ -71,8 +71,8 @@ Prompt.keyname2actions = {
   -- other keybindings
   ["ctrl_left"] = "left_word",
   ["ctrl_right"] = "right_word",
-  -- ["ctrl_backspace ???"] = "backspace_word", -- TODO: if backspace is ctrl + h, how does ctrl + backspace work?
-  -- ["ctrl_delete ???"] -- TODO: same as above
+  ["ctrl_backspace"] = "backspace_word",
+  ["ctrl_delete"] = "delete_word",
 }
 
 
